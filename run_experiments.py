@@ -1,10 +1,14 @@
 #!/usr/bin/python
+import pdb
 import argparse
 import glob
 from pathlib import Path
 from cbs import CBSSolver
 from independent import IndependentSolver
 from prioritized import PrioritizedPlanningSolver
+from sipp_independent import SIPP_IndependentSolver
+from sipp_cbs import SIPP_CBSSolver
+from graph_generation import SippGraph
 from visualize import Animation
 from single_agent_planner import get_sum_of_cost
 
@@ -83,13 +87,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
 
-    result_file = open("results.csv", "w", buffering=1)
+    #result_file = open("results.csv", "w", buffering=1)
 
     for file in sorted(glob.glob(args.instance)):
 
         print("***Import an instance***")
-        my_map, starts, goals = import_mapf_instance(file)
-        print_mapf_instance(my_map, starts, goals)
+        my_map1, starts, goals = import_mapf_instance(file)
+        print_mapf_instance(my_map1, starts, goals)
 
         if args.solver == "CBS":
             print("***Run CBS***")
@@ -97,22 +101,34 @@ if __name__ == '__main__':
             paths = cbs.find_solution(args.disjoint)
         elif args.solver == "Independent":
             print("***Run Independent***")
-            solver = IndependentSolver(my_map, starts, goals)
+            solver = IndependentSolver(my_map1, starts, goals)
             paths = solver.find_solution()
+            print(paths)
         elif args.solver == "Prioritized":
             print("***Run Prioritized***")
             solver = PrioritizedPlanningSolver(my_map, starts, goals)
             paths = solver.find_solution()
+        elif args.solver == "Sipp_independent":
+            print("***Run SIPP Independent***")
+            my_map = SippGraph(file, None)
+            solver = SIPP_IndependentSolver(file, my_map, starts, goals)
+            paths = solver.find_solution()
+            print("### PATHS ###")
+            print(paths)
+        elif args.solver == "Sipp_CBS":
+            print("***Run SIPP CBS***")
+            solver = SIPP_CBSSolver()
+            paths = solver.find_solution()
         else:
             raise RuntimeError("Unknown solver!")
 
-        cost = get_sum_of_cost(paths)
-        result_file.write("{},{}\n".format(file, cost))
+        # cost = get_sum_of_cost(paths)
+        #result_file.write("{},{}\n".format(file, cost))
 
 
         if not args.batch:
             print("***Test paths on a simulation***")
-            animation = Animation(my_map, starts, goals, paths)
+            animation = Animation(my_map1, starts, goals, paths)
             # animation.save("output.mp4", 1.0)
             animation.show()
-    result_file.close()
+    # result_file.close()
